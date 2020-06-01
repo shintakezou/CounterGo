@@ -243,7 +243,7 @@ func (t *thread) alphaBeta(alpha, beta, depth, height int) int {
 	var lazyEval = lazyEval{evaluator: t.evaluator, position: position}
 
 	// reverse futility pruning
-	if !pvNode && depth <= 1 && !isCheck &&
+	if !pvNode && depth <= 2 && !isCheck &&
 		beta < valueWin && beta > valueLoss &&
 		lazyEval.Value()-pawnValue*depth >= beta {
 		return beta
@@ -321,22 +321,14 @@ func (t *thread) alphaBeta(alpha, beta, depth, height int) int {
 		}
 		moveCount++
 
-		if !(alpha <= valueLoss ||
-			position.LastMove == MoveEmpty ||
-			moveCount == 1 ||
-			ml[i].Key >= sortTableKeyImportant ||
-			isCheck ||
-			child.IsCheck() ||
-			isCaptureOrPromotion(move) ||
-			isPawnAdvance(move, position.WhiteMove)) {
-			// late-move pruning
-			if depth <= 2 && moveCount >= 9+3*depth {
-				continue
-			}
-			// futility pruning
-			if depth <= 3 && lazyEval.Value()+pawnValue*depth <= alpha {
-				continue
-			}
+		// late-move pruning
+		if alpha > valueLoss && depth <= 2 &&
+			!(ml[i].Key >= sortTableKeyImportant ||
+				isCheck ||
+				child.IsCheck() ||
+				isCaptureOrPromotion(move)) &&
+			moveCount > 6*depth {
+			continue
 		}
 
 		var extension, reduction int
